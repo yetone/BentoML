@@ -54,6 +54,12 @@ install_requires = [
     'dataclasses;python_version < "3.7"',
     "chardet",
     "simple-di==0.1.0",
+    "simple_term_menu",
+    "dataclasses_json",
+    "yamldataclassconfig",
+    "yaspin",
+    "python-dateutil",
+    "tqdm==4.62.2",
 ]
 
 yatai_service_requires = [
@@ -157,7 +163,7 @@ setuptools.setup(
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
     ],
     python_requires=">=3.6.1",
-    entry_points={"console_scripts": ["bentoml=bentoml:commandline_interface"]},
+    entry_points={"console_scripts": ["bentoml=bentoml:commandline_interface", "yatai=yataicli.cmd:main"]},
     project_urls={
         "Bug Reports": "https://github.com/bentoml/BentoML/issues",
         "BentoML User Slack Group": "https://bit.ly/2N5IpbB",

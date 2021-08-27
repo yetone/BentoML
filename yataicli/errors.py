@@ -1,0 +1,2 @@
+class YataiCliError(Exception):
+    pass
