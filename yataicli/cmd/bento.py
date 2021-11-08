@@ -5,7 +5,6 @@ from pathlib import Path
 
 import click
 import requests
-from simple_term_menu import TerminalMenu
 from ruamel import yaml
 
 from yataicli.click_utils import _echo, CLI_COLOR_ERROR, CLI_COLOR_SUCCESS
@@ -21,27 +20,13 @@ from tqdm.utils import CallbackIOWrapper
 
 
 def add_bento_sub_command(cli):
-    def select_org(organization: str) -> str:
-        yatai_cli = get_current_yatai_cli()
-        if not organization:
-            with yaspin(text='Fetching organizations', color='yellow'):
-                org_list = yatai_cli.list_organizations(start=0, count=100)
-            _echo('Please select an organization:')
-            options = [org.name for org in org_list.items]
-            idx = TerminalMenu(options).show()
-            organization = options[idx]
-            _echo(f'You select {organization}')
-        return organization
-
     @cli.group(name='bento')
     def bento_cli():
         """Bento Management"""
 
     @bento_cli.command()
     @click.argument("bento", type=click.STRING)
-    @click.option("--organization", type=click.STRING)
-    def push(bento: str, organization: str) -> None:
-        organization = select_org(organization)
+    def push(bento: str) -> None:
         name, _, version = bento.partition(':')
         if not version:
             raise YataiCliError(f'Please specify the bento version')
@@ -54,13 +39,13 @@ def add_bento_sub_command(cli):
             bentoml_yaml = BentoMLYaml.from_dict(dct)
         yatai_cli = get_current_yatai_cli()
         with yaspin(text=f'Fetching bento {name}'):
-            bento_obj = yatai_cli.get_bento(org_name=organization, bento_name=name)
+            bento_obj = yatai_cli.get_bento(bento_name=name)
         if not bento_obj:
-            bento_obj = yatai_cli.create_bento(org_name=organization, req=CreateBentoSchema(name=name, description=''))
+            bento_obj = yatai_cli.create_bento(req=CreateBentoSchema(name=name, description=''))
         with yaspin(text=f'Fetching bento version {version}'):
-            bento_version_obj = yatai_cli.get_bento_version(org_name=organization, bento_name=name, version=version)
+            bento_version_obj = yatai_cli.get_bento_version(bento_name=name, version=version)
         if not bento_version_obj:
-            yatai_cli.create_bento_version(org_name=organization, bento_name=bento_obj.name, req=CreateBentoVersionSchema(
+            yatai_cli.create_bento_version(bento_name=bento_obj.name, req=CreateBentoVersionSchema(
                 description='',
                 version=version,
                 build_at=bentoml_yaml.metadata.created_at,
@@ -73,14 +58,14 @@ def add_bento_sub_command(cli):
                     ),
                     apis=bentoml_yaml.apis),
             ))
-        bento_version_obj = yatai_cli.presign_bento_version_s3_upload_url(org_name=organization, bento_name=bento_obj.name, version=version)
+        bento_version_obj = yatai_cli.presign_bento_version_s3_upload_url(bento_name=bento_obj.name, version=version)
         tar_io = io.BytesIO()
         with yaspin(text=f'Taring bento {name}'):
             with tarfile.open(fileobj=tar_io, mode='w:gz') as tar:
                 tar.add(bento_dir_path, arcname='./')
         tar_io.seek(0, 0)
         with yaspin(text=f'Starting upload bento {name}'):
-            yatai_cli.start_upload_bento_version(org_name=organization, bento_name=bento_obj.name, version=version)
+            yatai_cli.start_upload_bento_version(bento_name=bento_obj.name, version=version)
         file_size = tar_io.getbuffer().nbytes
         with tqdm(desc=f'Uploading bento {name}', total=file_size, unit='B', unit_scale=True, unit_divisor=1024) as t:
             finish_req = FinishUploadBentoVersionSchema(
@@ -100,7 +85,7 @@ def add_bento_sub_command(cli):
                     status=BentoVersionUploadStatus.FAILED,
                     reason=str(e),
                 )
-            yatai_cli.finish_upload_bento_version(org_name=organization, bento_name=bento_obj.name, version=version, req=finish_req)
+            yatai_cli.finish_upload_bento_version(bento_name=bento_obj.name, version=version, req=finish_req)
         if finish_req.status != BentoVersionUploadStatus.SUCCESS:
             _echo(f'Upload {finish_req}: {finish_req.reason}', color=CLI_COLOR_ERROR)
         else:

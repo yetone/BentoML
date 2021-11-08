@@ -26,4 +26,5 @@ def add_login_sub_command(cli):
 
         yatai_cli = ctx.get_yatai_cli()
         user = yatai_cli.get_current_user()
-        _echo(f'login successfully: {user.name}', color=CLI_COLOR_SUCCESS)
+        org = yatai_cli.get_current_organization()
+        _echo(f'login successfully! user: {user.name}, organization: {org.name}', color=CLI_COLOR_SUCCESS)

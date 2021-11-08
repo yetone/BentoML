@@ -6,7 +6,7 @@ import requests
 
 from yataicli.errors import YataiCliError
 from yataicli.schemas import UserSchema, BentoSchema, CreateBentoSchema, CreateBentoVersionSchema, BentoVersionSchema, \
-    OrganizationListSchema, FinishUploadBentoVersionSchema
+    OrganizationListSchema, FinishUploadBentoVersionSchema, OrganizationSchema
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +36,14 @@ class YataiClient:
         self._check_resp(resp)
         return UserSchema.from_json(resp.text)
 
+    def get_current_organization(self) -> Optional[OrganizationSchema]:
+        url = urljoin(self.endpoint, '/api/v1/current_org')
+        resp = self.session.get(url)
+        if self._is_not_found(resp):
+            return None
+        self._check_resp(resp)
+        return OrganizationSchema.from_json(resp.text)
+
     def list_organizations(self, start: int, count: int) -> OrganizationListSchema:
         url = urljoin(self.endpoint, '/api/v1/orgs')
         resp = self.session.get(url, params={
@@ -45,49 +53,49 @@ class YataiClient:
         self._check_resp(resp)
         return OrganizationListSchema.from_json(resp.text)
 
-    def get_bento(self, org_name: str, bento_name: str) -> Optional[BentoSchema]:
-        url = urljoin(self.endpoint, f'/api/v1/orgs/{org_name}/bentos/{bento_name}')
+    def get_bento(self, bento_name: str) -> Optional[BentoSchema]:
+        url = urljoin(self.endpoint, f'/api/v1/bentos/{bento_name}')
         resp = self.session.get(url)
         if self._is_not_found(resp):
             return None
         self._check_resp(resp)
         return BentoSchema.from_json(resp.text)
 
-    def create_bento(self, org_name: str, req: CreateBentoSchema) -> BentoSchema:
-        url = urljoin(self.endpoint, f'/api/v1/orgs/{org_name}/bentos')
+    def create_bento(self, req: CreateBentoSchema) -> BentoSchema:
+        url = urljoin(self.endpoint, f'/api/v1/bentos')
         resp = self.session.post(url, data=req.to_json())
         self._check_resp(resp)
         return BentoSchema.from_json(resp.text)
 
-    def get_bento_version(self, org_name: str, bento_name: str, version: str) -> Optional[BentoVersionSchema]:
-        url = urljoin(self.endpoint, f'/api/v1/orgs/{org_name}/bentos/{bento_name}/versions/{version}')
+    def get_bento_version(self, bento_name: str, version: str) -> Optional[BentoVersionSchema]:
+        url = urljoin(self.endpoint, f'/api/v1/bentos/{bento_name}/versions/{version}')
         resp = self.session.get(url)
         if self._is_not_found(resp):
             return None
         self._check_resp(resp)
         return BentoVersionSchema.from_json(resp.text)
 
-    def create_bento_version(self, org_name: str, bento_name: str, req: CreateBentoVersionSchema) -> BentoVersionSchema:
-        url = urljoin(self.endpoint, f'/api/v1/orgs/{org_name}/bentos/{bento_name}/versions')
+    def create_bento_version(self, bento_name: str, req: CreateBentoVersionSchema) -> BentoVersionSchema:
+        url = urljoin(self.endpoint, f'/api/v1/bentos/{bento_name}/versions')
         resp = self.session.post(url, data=req.to_json())
         self._check_resp(resp)
         return BentoVersionSchema.from_json(resp.text)
 
-    def presign_bento_version_s3_upload_url(self, org_name: str, bento_name: str, version: str) -> BentoVersionSchema:
-        url = urljoin(self.endpoint, f'/api/v1/orgs/{org_name}/bentos/{bento_name}/versions/{version}/presign_s3_upload_url')
+    def presign_bento_version_s3_upload_url(self, bento_name: str, version: str) -> BentoVersionSchema:
+        url = urljoin(self.endpoint, f'/api/v1/bentos/{bento_name}/versions/{version}/presign_s3_upload_url')
         resp = self.session.patch(url)
         self._check_resp(resp)
         return BentoVersionSchema.from_json(resp.text)
 
-    def start_upload_bento_version(self, org_name: str, bento_name: str, version: str) -> BentoVersionSchema:
-        url = urljoin(self.endpoint, f'/api/v1/orgs/{org_name}/bentos/{bento_name}/versions/{version}/start_upload')
+    def start_upload_bento_version(self, bento_name: str, version: str) -> BentoVersionSchema:
+        url = urljoin(self.endpoint, f'/api/v1/bentos/{bento_name}/versions/{version}/start_upload')
         resp = self.session.patch(url)
         self._check_resp(resp)
         return BentoVersionSchema.from_json(resp.text)
 
-    def finish_upload_bento_version(self, org_name: str, bento_name: str, version: str,
+    def finish_upload_bento_version(self, bento_name: str, version: str,
                                     req: FinishUploadBentoVersionSchema) -> BentoVersionSchema:
-        url = urljoin(self.endpoint, f'/api/v1/orgs/{org_name}/bentos/{bento_name}/versions/{version}/finish_upload')
+        url = urljoin(self.endpoint, f'/api/v1/bentos/{bento_name}/versions/{version}/finish_upload')
         resp = self.session.patch(url, data=req.to_json())
         self._check_resp(resp)
         return BentoVersionSchema.from_json(resp.text)
