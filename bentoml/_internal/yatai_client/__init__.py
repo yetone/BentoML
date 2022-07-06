@@ -604,7 +604,7 @@ class YataiClient:
                 )
             if finish_req.status is ModelUploadStatus.FAILED:
                 self.log_progress.add_task(
-                    f'[bold red]Failed to upload model "{model.tag}"'
+                    f'[bold red]Failed to upload model "{model.tag}"; reason: "{finish_req.reason}"'
                 )
             with self.spin(text="Submitting upload status to Yatai"):
                 yatai_rest_client.finish_upload_model(
